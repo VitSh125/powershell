@@ -1,0 +1,25 @@
+#ver1.0 18.10.19
+$files= Get-ChildItem -File -Filter "*.mib" | Measure-Object | %{$_.Count}
+$countfile=0
+Get-ChildItem -Filter "*.mib" | %{$file=$input.name 
+$name = Select-String -Path $file -Pattern "END" -AllMatches -CaseSensitive
+$endstrm=$name[$name.Count-1] -split ":"
+$endstr= $endstrm[0]+":"+$endstrm[1]
+$countfile++
+$strng=[int]$endstrm[2]+1
+$endofend=[int]$endstrm[2]
+$newpath=New-Item  -Name "trimed_mib/" -ItemType "directory" -Force 
+$eof=Select-String -Path $file -Pattern 'H\|159H\|159H\|159'  -NotMatch
+$eoftrm=$eof[$eof.Count-1] -split ":"
+$eofstr=$eoftrm[2]
+Write-Host -NoNewline "$countfile of $files",$name[$name.Count-1].Filename,"-> END at $endofend, file at $eofstr --> "
+if($endofend -lt $eofstr){
+  $file+"  deleted after end " >>log.txt
+  Get-Content $file | Select-String -Pattern 'H\|159H\|159H\|159'  -NotMatch |where {$_.linenumber -lt $strng}  | Out-File $newpath"\"$file
+  write('deleted and copired file to ./trimed_mib/')
+   }
+   else
+{$file+"   clear file" >>log.txt
+write('clear')
+}
+}
