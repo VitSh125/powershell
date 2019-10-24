@@ -1,0 +1,39 @@
+
+#get ip of jun and community name ex.: writesnmtojuniper 10.10.10.100 PublicRO
+#you need module Posh-SSH for this
+$otargetIP= $args[0]
+$ocommunity= $args[1]
+Function writeSNMP{ Param ($targetIP,$community)
+#your snmp servers
+$snmptarget1="10.10.10.1"
+$snmptarget2="10.10.10.2"
+Import-Module Posh-SSH
+#you need change credentials
+$user="user"
+$psw=ConvertTo-SecureString -String "password" -AsPlainText -Force
+$ocred =New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $user, $psw
+#connect to target
+write("connect to $targetIP")
+$SSHSession = New-SSHSession -ComputerName $targetIP -Credential $ocred -AcceptKey:$true
+#$SSH = $SSHSession | New-SSHShellStream
+$result= Invoke-SSHCommand -Command "show configuration snmp community $community clients" $SSHSession.SessionId
+$result.Output
+$result=Invoke-SSHCommand -Command "edit" $SSHSession.SessionId
+$result=Invoke-SSHCommand -Command "edit;set snmp community $community authorization read-only" $SSHSession.SessionId
+$result=Invoke-SSHCommand -Command "edit;set snmp community $community clients $snmptarget1" $SSHSession.SessionId
+$result=Invoke-SSHCommand -Command "edit;set snmp community $community clients $snmptarget2" $SSHSession.SessionId
+$result=Invoke-SSHCommand -Command "edit;set snmp trap-options source-address  $targetIP" $SSHSession.SessionId
+$result=Invoke-SSHCommand -Command "edit;set snmp trap-options enterprise-oid" $SSHSession.SessionId
+$result=Invoke-SSHCommand -Command "edit;set snmp trap-group $community version v2" $SSHSession.SessionId
+#you also can add another category "remote-operations routing startup rmon-alarm ..."
+$result=Invoke-SSHCommand -Command "edit;set snmp trap-group $community categories authentication chassis link " $SSHSession.SessionId
+$result=Invoke-SSHCommand -Command "edit;set snmp trap-group $community targets $snmptarget1" $SSHSession.SessionId
+$result=Invoke-SSHCommand -Command "edit;set snmp trap-group $community targets $snmptarget2" $SSHSession.SessionId
+$result=Invoke-SSHCommand -Command "edit;commit" -SessionId $SSHSession.SessionId 
+$result.Output
+$result= Invoke-SSHCommand -Command "exit" -SessionId $SSHSession.SessionId
+$result= Invoke-SSHCommand -Command "show configuration snmp community $community clients" $SSHSession.SessionId
+$result.Output
+$exit= Remove-SSHSession -SSHSession $SSHSession
+  write("close connection - $exit")
+}
