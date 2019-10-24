@@ -1,0 +1,30 @@
+Get-ChildItem -Filter "*.mib" | %{$file=$input.name $name = Select-String -Path $file -Pattern "DEFINITIONS ::" 
+$name = $name -split ":"
+$name = $name[3] -replace '(^\s+|\s+$)','' -replace '\s+',' '
+$name = $name -split " "
+$name=$name[0]+".mib"
+if ($name -eq $file){
+write($file+" exist")
+$file+" -> "+$name+" ==exist" >>log_exist.txt } else{  if(Test-Path $name)
+  {  $i = 0
+   While (Test-Path $name) {
+         $name = $name -replace "\(...\)" 
+          $name = $name -replace "\(..\)"
+        $name = $name -replace "\(.\)"
+     
+      
+        $i += 1        
+        $name = $name -replace "\.mib","($i).mib"    
+       
+       
+        }
+   write("$name"+" duplicate")
+   $file+" -> "+$name+" ==duplicate" >>log_dupl.txt
+  }
+ else
+  {  write("$name"+" create")
+   $file+" -> "+$name >>log_create.txt
+  }
+ rename-Item $file $name
+ }
+}
