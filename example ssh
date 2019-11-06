@@ -1,0 +1,46 @@
+$SwitchIP = '10.10.3.2'
+$SwitchPort = 4
+$Cred = Get-Credential admin
+$SSHSession = New-SSHSession -ComputerName 
+$SwitchIP -Credential $Cred -Verbose
+if ($($sshSession.Connected) -eq $true) 
+{ Write-Host "SSH session opened" -ForegroundColor Green 
+Write-Host " " 
+Write-Host " open shell" -ForegroundColor Green ### сессия открыта успешно, начинаем сброс порта 
+$ssh = $sshSession | New-SSHShellStream 
+Start-Sleep -Seconds 1 # ресетим интерфейс 
+$ssh.read() 
+Start-Sleep -Seconds 1 
+$ssh.WriteLine( "enable" ) 
+$ssh.read() 
+Write-Host " переходим в привелигированный режим" -ForegroundColor Green 
+Start-Sleep -Seconds 1 
+$ssh.WriteLine( "password" ) 
+$ssh.read() 
+Write-Host " вводим пароль" -ForegroundColor Green 
+Start-Sleep -Seconds 1 
+$ssh.WriteLine( "configure" ) 
+$ssh.read() 
+Write-Host " переходим в режим конфигурации" -ForegroundColor Green 
+Start-Sleep -Seconds 1 
+$ssh.WriteLine( "interface gigabitEthernet 1/0/$SwitchPort" ) 
+$ssh.read() 
+Write-Host " переходим к конфигурации интерфейса interface gigabitEthernet 1/0/$SwitchPort" -ForegroundColor Green 
+Start-Sleep -Seconds 1 
+$ssh.WriteLine( "shutdown" ) 
+$ssh.read() Write-Host " отключаем интерфейс" -ForegroundColor Green 
+Start-Sleep -Seconds 3 
+$ssh.WriteLine( "no shutdown" ) 
+$ssh.read() 
+Write-Host " включаем интерфейс" -ForegroundColor Green 
+Write-Host " отработали, завершаемся" -ForegroundColor Green}
+else 
+{
+ Write-Host "SSH session cannot be established" -ForegroundColor Red Write-Host "script terminate" -ForegroundColor Red 
+exit}
+if ( $($sshSession | Remove-SSHSession) -eq $true)
+ { Write-Host "SSH session closed" -ForegroundColor Green}
+else
+{ Write-Host "SSH session NOT closed" -ForegroundColor Red 
+Write-Host "please check manual" -ForegroundColor Red 
+Get-SSHSession}  
